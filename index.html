@@ -9,15 +9,22 @@
     <title>Solitare</title>
 </head>
 <body>
-    <img src="dark/BACK.png" alt="Húzópakli" onclick="Pull()" id="deck">
-    <img src="" alt="Lehúzott pakli" onclick="Try()">
-    <h1>Pasziánsz</h1>
-    <img src="" alt="Pick ász helye" id="P-A_slot">
-    <img src="" alt="Treff ász helye" id="T-A_slot">
-    <img src="" alt="Káró ász helye" id="D-A_slot">
-    <img src="" alt="Kör ász helye" id="H-A_slot">
-    <table id="playing_field">
-        
-    </table>
+    <div id="start">
+        <h1>Solitare / Pasziánsz</h1>
+        <img src="" alt="Kinézeti téma váltó gomb" onclick="Change_Theme()">
+        <input type="button" value="Start" onclick="Start()">
+    </div>
+    <div id="game">
+        <div id="deck" onclick="Pull()"> </div>
+        <div onclick="Try()"> </div>
+        <h1>Solitare / Pasziánsz</h1>
+        <div id="P-A_slot"> </div>
+        <div id="T-A_slot"> </div>
+        <div id="D-A_slot"> </div>
+        <div id="H-A_slot"> </div>
+        <div id="playing_field">
+
+        </div>  
+    </div>
 </body>
 </html>
