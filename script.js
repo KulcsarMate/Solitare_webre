@@ -1,12 +1,15 @@
 const deck = []
 const theme = "dark"
 const playing_field = document.getElementById("playing_field")
+const pulling_deck = document.getElementById("deck")
 
 function Start(){
     const start_screen = document.getElementById("start")
     const game_screen = document.getElementById("game")
     start_screen.style.display = "none"
     game_screen.style.display = "block"
+    let pic = document.createElement("img").setAttribute("src", `/${theme}/BACK.png`)
+    pulling_deck.appendChild(pic)
     Shuffle()
     Spread()
 }
@@ -16,8 +19,14 @@ function Spread(){
         const ul = document.createElement("ul")
         for (let i = 0; i < index+1; i++) {
             let li =document.createElement("li")
-            li.innerText = deck[i] 
+            li.innerHTML = deck[i]
+            if (i == index) {
+                const spl = li.id.split("-")
+                li.setAttribute("src", `/${theme}/${spl[0]}-${spl[1]}.png`)
+            }
+            ul.appendChild(li)
         }
+        playing_field.appendChild(ul)
     }
 }
 
@@ -51,7 +60,7 @@ function Fill(){
             else{
                 act[i] = document.createElement("img").setAttribute("id", `${i}-H-red`)
             }
-            act[i].setAttribute("src", `BACK.png`)
+            act[i].setAttribute("src", `/${theme}/BACK.png`)
         }
         if (index == 0) {
             for (let j = 0; j < act.length; j++) {
