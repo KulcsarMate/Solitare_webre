@@ -8,22 +8,31 @@ function Start(){
     const game_screen = document.getElementById("game")
     start_screen.style.display = "none"
     game_screen.style.display = "block"
-    let pic = document.createElement("img").setAttribute("src", `/${theme}/BACK.png`)
+
+    let pic = document.createElement("img")
+    pic.setAttribute("src", `${theme}/BACK.png`)
     pulling_deck.appendChild(pic)
+
+    Fill()
     Shuffle()
     Spread()
 }
 
 function Spread(){
+    let deck_i = 0;
     for (let index = 0; index < 6; index++) {
         const ul = document.createElement("ul")
         for (let i = 0; i < index+1; i++) {
             let li =document.createElement("li")
-            li.innerHTML = deck[i]
+            let pic = deck[deck_i++]
             if (i == index) {
-                const spl = li.id.split("-")
-                li.setAttribute("src", `/${theme}/${spl[0]}-${spl[1]}.png`)
+                const spl = pic.id.split("-")
+                pic.setAttribute("src", `${theme}/${spl[0]}-${spl[1]}.png`)
             }
+            else{
+                pic.setAttribute("src", `${theme}/BACK.png`)
+            }
+            li.appendChild(pic)
             ul.appendChild(li)
         }
         playing_field.appendChild(ul)
@@ -47,20 +56,23 @@ function Random(min, max){
 function Fill(){
     for (let index = 0; index < 4; index++) {  //0 = clubs, 1 = diamonds, 2 = spades, 3 = hearts
         const act = []
-        for (let i = 0; i < 13; i++) {
-            if (index = 0) {
-                act[i] = document.createElement("img").setAttribute("id", `${i}-C-black`)
+        for (let i = 0; i < 14; i++) {
+            if (index == 0) {
+                act[i] = document.createElement("img")
+                act[i].setAttribute("id", `${IndexCheck(i)}-C-black`)
             }
-            else if (index = 1) {
-                act[i] = document.createElement("img").setAttribute("id", `${i}-D-red`)
+            else if (index == 1) {
+                act[i] = document.createElement("img")
+                act[i].setAttribute("id", `${IndexCheck(i)}-D-red`)
             }
-            else if (index = 2) {
-                act[i] = document.createElement("img").setAttribute("id", `${i}-S-black`)
+            else if (index == 2) {
+                act[i] = document.createElement("img")
+                act[i].setAttribute("id", `${IndexCheck(i)}-P-black`)
             }
             else{
-                act[i] = document.createElement("img").setAttribute("id", `${i}-H-red`)
+                act[i] = document.createElement("img")
+                act[i].setAttribute("id", `${IndexCheck(i)}-H-red`)
             }
-            act[i].setAttribute("src", `/${theme}/BACK.png`)
         }
         if (index == 0) {
             for (let j = 0; j < act.length; j++) {
@@ -72,5 +84,23 @@ function Fill(){
                 deck[13 * index + j] = act[j]
             }
         }
+    }
+}
+
+function IndexCheck(i){
+    if (i == 10) {
+        return "J"
+    }
+    else if (i == 11) {
+        return "Q"
+    }
+    else if (i == 12) {
+        return "K"
+    }
+    else if (i == 13) {
+        return "A"
+    }
+    else{
+        return i+1
     }
 }
