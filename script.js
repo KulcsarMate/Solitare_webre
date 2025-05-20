@@ -1,4 +1,6 @@
 const deck = []
+const cur_last = []
+const cur_finish = []
 const theme = "dark"
 const playing_field = document.getElementById("playing_field")
 const pulling_deck = document.getElementById("deck")
@@ -18,6 +20,11 @@ function Start(){
     Spread()
 }
 
+function Try(item){
+    Search(item, cur_last)
+    Search(item, cur_finish)
+}
+
 function Spread(){
     let deck_i = 0;
     for (let index = 0; index < 6; index++) {
@@ -32,6 +39,9 @@ function Spread(){
             else{
                 pic.setAttribute("src", `${theme}/BACK.png`)
             }
+            pic.addEventListener("click", function(){
+                Try(this)
+            })
             li.appendChild(pic)
             ul.appendChild(li)
         }
