@@ -21,8 +21,20 @@ function Start(){
 }
 
 function Try(item){
-    Search(item, cur_last)
-    Search(item, cur_finish)
+    const cur_object = item.id.split("-")
+    if (cur_object[0] == "A") {
+        
+    }
+    const collumns = playing_field.querySelectorAll("ul")
+    let i = 0
+    let found = false
+    while (i < collumns.length && !found) {
+        const collumn = collumns[i].querySelectorAll("li")
+        const last_in_c = collumn[collumn.length-1].id.split("-")
+        if (Smaller()) {
+            
+        }
+    }
 }
 
 function Spread(){
@@ -33,8 +45,7 @@ function Spread(){
             let li =document.createElement("li")
             let pic = deck[deck_i++]
             if (i == index) {
-                const spl = pic.id.split("-")
-                pic.setAttribute("src", `${theme}/${spl[0]}-${spl[1]}.png`)
+                Reveal(pic)
             }
             else{
                 pic.setAttribute("src", `${theme}/BACK.png`)
@@ -47,6 +58,11 @@ function Spread(){
         }
         playing_field.appendChild(ul)
     }
+}
+
+function Reveal(pic){
+    const spl = pic.id.split("-")
+    pic.setAttribute("src", `${theme}/${spl[0]}-${spl[1]}.png`)
 }
 
 function Shuffle(){
