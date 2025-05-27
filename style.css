@@ -1,0 +1,55 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+.theme-dark {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+.theme-light {
+  background-color: #f0f0f0;
+  color: #000000;
+}
+
+#menu {
+  padding: 10px;
+  background: #333;
+  color: white;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+
+.deck-area {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.foundations {
+  display: flex;
+  gap: 10px;
+}
+
+.foundation {
+  width: 70px;
+  height: 100px;
+  border: 2px dashed white;
+}
+
+.title {
+  font-size: 24px;
+}
+
+.card-columns {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 20px;
+}

@@ -16,7 +16,7 @@ function Start(){
     pulling_deck.appendChild(pic)
 
     Fill()
-    Shuffle()
+    console.log(deck.map(card => card?.id))
     Spread()
 
     document.getElementById("P-A-slot").addEventListener("click", () => TryFoundation("P"))
@@ -24,18 +24,38 @@ function Start(){
     document.getElementById("D-A-slot").addEventListener("click", () => TryFoundation("D"))
     document.getElementById("H-A-slot").addEventListener("click", () => TryFoundation("H"))
     ["P", "C", "D", "H"].forEach(suit => {
-        const pile = document.getElementById(`${suit}-A-slot`)
-    
-        pile.addEventListener("dragover", e => e.preventDefault())
-        
-        pile.addEventListener("drop", function(e) {
-            e.preventDefault()
-            const cardId = e.dataTransfer.getData("text/plain")
-            const card = document.getElementById(cardId)
-            TryFoundation(card, suit, this)
-    })
+    const pile = document.getElementById(`${suit}-A-slot`)
+    if (!pile) {
+        console.warn(`Missing foundation slot for suit: ${suit}`)
+        return
+    }
+
+    pile.addEventListener("click", () => TryFoundation(suit))
+
+    pile.addEventListener("dragover", e => e.preventDefault())
+
+    pile.addEventListener("drop", function(e) {
+    e.preventDefault()
+    const cardIds = e.dataTransfer.getData("text/plain")
+    let ids;
+    try {
+        ids = JSON.parse(cardIds)
+    } catch (err) {
+        console.error("Invalid drag data:", cardIds)
+        return
+    }
+
+    const cardId = Array.isArray(ids) ? ids[0] : ids
+    const card = document.getElementById(cardId)
+    if (!card || !card.id) {
+        console.warn("Dragged card not found:", cardId)
+        return
+    }
+
+    TryFoundation(card, suit, this)
 })
 
+    })
 }
 
 function Try(item){
@@ -63,7 +83,7 @@ function Try(item){
     }
 }
 
-function TryFoundation(suit) {
+function TryFoundationDrop(suit) {
     const selected = document.querySelector(".selected")
     if (!selected) return
 
@@ -88,7 +108,7 @@ function TryFoundation(suit) {
 
 function moveToFoundation(card, pile) {
     const li = card.parentNode
-    pile.appendChild(card) // You might want to clone instead of move if you want animation
+    pile.appendChild(card)
     li.remove()
     card.classList.remove("selected")
 }
@@ -98,11 +118,16 @@ function OppositeColor(compared, referance) {
 }
 
 function TryFoundation(card, suit, pile) {
+    if (!card || !card.id) {
+        console.error("Invalid card object:", card);
+        return;
+    }
+
     const [value, cardSuit, color] = card.id.split("-")
     if (cardSuit !== suit) return
 
     const pileImages = pile.querySelectorAll("img")
-    const order = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+    const order = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
 
     if (pileImages.length === 0 && value === "A") {
         moveToFoundation(card, pile)
@@ -148,6 +173,11 @@ function Spread(){
         for (let i = 0; i < index+1; i++) {
             let li =document.createElement("li")
             let pic = deck[deck_i++]
+
+            if (!pic) {
+                console.error(`Card not found in deck at index ${deck_i - 1}`)
+            }
+
             if (i == index) {
                 Reveal(pic)
             }
@@ -197,83 +227,88 @@ function Spread(){
             e.preventDefault()
         })
         ul.addEventListener("drop", function(e) {
-             e.preventDefault()
+            e.preventDefault()
+            this.classList.remove("valid-drop")
+
             const ids = JSON.parse(e.dataTransfer.getData("text/plain"))
-            const stack = ids.map(id => document.getElementById(id).parentElement) // <li>s
+            const sourceColumn = Array.from(document.querySelectorAll("#playing_field ul"))
+            .find(ul => Array.from(ul.querySelectorAll("img"))
+            .some(img => ids.includes(img.id)))
 
-            const topCard = stack[0].querySelector("img")
-            const [val, suit, color] = topCard.id.split("-")
+            if (!sourceColumn) return
 
-            const cardsInTarget = this.querySelectorAll("li")
-            if (cardsInTarget.length === 0 && val === "K") {
-                stack.forEach(li => this.appendChild(li))
-                return
-            }
+            const draggedLis = ids.map(id => {
+                const img = document.getElementById(id)
+                const li = img.closest("li")
+                return li
+            })
 
-            const lastLi = cardsInTarget[cardsInTarget.length - 1]
-            const lastCard = lastLi.querySelector("img")
-            const [lastVal, lastSuit, lastColor] = lastCard.id.split("-")
+            draggedLis.forEach(li => {
+                this.appendChild(li)
+            })
 
-            if (OppositeColor(color, lastColor) && Smaller(val, lastVal)) {
-                stack.forEach(li => this.appendChild(li))
+           const remainingLis = sourceColumn.querySelectorAll("li")
+            if (remainingLis.length > 0) {
+                const topImg = remainingLis[remainingLis.length - 1].querySelector("img")
+                Reveal(topImg)
             }
         })
         playing_field.appendChild(ul)
     }
 }
 
-function Reveal(pic){
-    const spl = pic.id.split("-")
-    pic.setAttribute("src", `${theme}/${spl[0]}-${spl[1]}.png`)
+function Reveal(img){
+    if (!img || !img.id) return
+    const [val, suit, color] = img.id.split("-")
+    img.setAttribute("src", `${theme}/${val}-${suit}.png`)
 }
 
-function Shuffle(){
-    for (let index = 0; index < deck.length; index++) {
-        let r1 = Random(0, deck.length)
-        let r2 = Random(0, deck.length)
-        let act = deck[r1]
-        deck[r1] = deck[r2]
-        deck[r2] = act
+function Shuffle() {
+    if (deck.length !== 52) {
+        console.warn("Deck not full during shuffle, refilling.")
+        Fill()
+    }
+
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Random(0, i)
+        const temp = deck[i]
+        deck[i] = deck[j]
+        deck[j] = temp
     }
 }
+
 
 function Random(min, max){
     return Math.floor((Math.random() * (max-min+1)+min))
 }
 
-function Fill(){
-    for (let index = 0; index < 4; index++) {  //0 = clubs, 1 = diamonds, 2 = spades, 3 = hearts
-        const act = []
-        for (let i = 0; i < 14; i++) {
-            if (index == 0) {
-                act[i] = document.createElement("img")
-                act[i].setAttribute("id", `${IndexCheck(i)}-C-black`)
-            }
-            else if (index == 1) {
-                act[i] = document.createElement("img")
-                act[i].setAttribute("id", `${IndexCheck(i)}-D-red`)
-            }
-            else if (index == 2) {
-                act[i] = document.createElement("img")
-                act[i].setAttribute("id", `${IndexCheck(i)}-P-black`)
-            }
-            else{
-                act[i] = document.createElement("img")
-                act[i].setAttribute("id", `${IndexCheck(i)}-H-red`)
-            }
-        }
-        if (index == 0) {
-            for (let j = 0; j < act.length; j++) {
-                deck[j] = act[j]
-            }
-        }
-        else{
-            for (let j = 0; j < act.length; j++) {
-                deck[13 * index + j] = act[j]
-            }
+function Fill() {
+    deck.length = 0;
+
+    const suits = [
+        { code: "C", color: "black" }, // Clubs - Treff
+        { code: "D", color: "red" },   // Diamonds - Káró
+        { code: "P", color: "black" }, // Spades - Pick
+        { code: "H", color: "red" }    // Hearts - Kör
+    ]
+
+    for (const suit of suits) {
+        for (let i = 0; i < 13; i++) {
+            const img = document.createElement("img")
+            const val = IndexCheck(i)
+            img.setAttribute("id", `${val}-${suit.code}-${suit.color}`)
+            img.setAttribute("draggable", true)
+            deck.push(img)
         }
     }
+
+    if (deck.length !== 52) {
+        console.error("Deck is not properly filled:", deck.length, "cards found.")
+    }
+
+    Shuffle()
 }
+
 
 function IndexCheck(i){
     if (i == 10) {
@@ -285,10 +320,23 @@ function IndexCheck(i){
     else if (i == 12) {
         return "K"
     }
-    else if (i == 13) {
+    else if (i == 0) {
         return "A"
     }
     else{
         return i+1
+    }
+}
+
+function Change_Theme() {
+
+    const game = document.getElementById("game")
+    game.classList.toggle("theme-dark")
+    game.classList.toggle("theme-light")
+    if (theme == "dark") {
+        theme = "light"
+    }
+    else{
+        theme = "dark"
     }
 }
