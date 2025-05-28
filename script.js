@@ -1,9 +1,10 @@
 const deck = []
 const cur_last = []
 const cur_finish = []
-const theme = "dark"
+let theme = "dark"
 const playing_field = document.getElementById("playing_field")
 const pulling_deck = document.getElementById("deck")
+const puller = document.getElementById("puller")
 
 function Start(){
     const start_screen = document.getElementById("start")
@@ -26,7 +27,7 @@ function Start(){
     ["P", "C", "D", "H"].forEach(suit => {
     const pile = document.getElementById(`${suit}-A-slot`)
     if (!pile) {
-        console.warn(`Missing foundation slot for suit: ${suit}`)
+        console.warn(`Missing the suit ${suit}`)
         return
     }
 
@@ -119,7 +120,7 @@ function OppositeColor(compared, referance) {
 
 function TryFoundation(card, suit, pile) {
     if (!card || !card.id) {
-        console.error("Invalid card object:", card);
+        console.error(`Invalid card: ${card}`);
         return;
     }
 
@@ -175,7 +176,7 @@ function Spread(){
             let pic = deck[deck_i++]
 
             if (!pic) {
-                console.error(`Card not found in deck at index ${deck_i - 1}`)
+                console.error(`Card not found at index ${deck_i - 1}`)
             }
 
             if (i == index) {
@@ -265,7 +266,7 @@ function Reveal(img){
 
 function Shuffle() {
     if (deck.length !== 52) {
-        console.warn("Deck not full during shuffle, refilling.")
+        console.warn("Deck not full during shuffle, refilling + reshuffle.")
         Fill()
     }
 
@@ -288,7 +289,7 @@ function Fill() {
     const suits = [
         { code: "C", color: "black" }, // Clubs - Treff
         { code: "D", color: "red" },   // Diamonds - Káró
-        { code: "P", color: "black" }, // Spades - Pick
+        { code: "P", color: "black" }, // Spades - Pick (S lenne a jó jelzés, de csak P jelzővel találtam jó asseteket, és lusta vagyok átírni, szóval...)
         { code: "H", color: "red" }    // Hearts - Kör
     ]
 
@@ -330,7 +331,7 @@ function IndexCheck(i){
 
 function Change_Theme() {
 
-    const game = document.getElementById("game")
+    const game = document.querySelector("body")
     game.classList.toggle("theme-dark")
     game.classList.toggle("theme-light")
     if (theme == "dark") {

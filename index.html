@@ -14,17 +14,28 @@
         <img src="" alt="Kinézeti téma váltó gomb" onclick="Change_Theme()">
         <input type="button" value="Start" onclick="Start()">
     </div>
-    <div id="game">
-        <div id="deck" onclick="Pull()"> </div>
-        <div class="foundation"> </div>
-        <h1>Solitare / Pasziánsz</h1>
-        <div id="P-A-slot" class="foundation"> </div>
-        <div id="C-A-slot" class="foundation"> </div>
-        <div id="D-A-slot" class="foundation"> </div>
-        <div id="H-A-slot" class="foundation"> </div>
-        <div id="playing_field">
-
-        </div>
+        <div id="game">
+            <div class="top-bar">
+                <div class="top-left">
+                    <div id="deck" onclick="Pull()"> </div>
+                    <div id="puller" class="foundation"> </div>
+                </div>
+        
+                <div class="top-center">
+                    <h1>Solitare / Pasziánsz</h1>
+                </div>
+        
+                <div class="top-right">
+                    <div id="P-A-slot" class="foundation"> </div>
+                    <div id="C-A-slot" class="foundation"> </div>
+                    <div id="D-A-slot" class="foundation"> </div>
+                    <div id="H-A-slot" class="foundation"> </div>
+                </div>
+            </div>
+        
+            <div id="playing_field">
+                
+            </div>
     </div>
 </body>
 </html>
