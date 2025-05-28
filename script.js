@@ -1,6 +1,5 @@
 const deck = []
-const cur_last = []
-const cur_finish = []
+let pull_index = 28 //A kiosztánál leosztott 28 lap.
 let theme = "dark"
 const playing_field = document.getElementById("playing_field")
 const pulling_deck = document.getElementById("deck")
@@ -82,6 +81,27 @@ function Try(item){
             return
         }
     }
+}
+
+function Pull() {
+    const puller = document.getElementById("puller")
+
+    if (pull_index >= deck.length) {
+        pull_index = 28
+        puller.innerHTML = ""
+    }
+
+    const card = deck[pull_index++]
+    Reveal(card)
+
+    const li = document.createElement("li")
+    li.appendChild(card)
+
+    li.addEventListener("click", function () {
+        Try(this)
+    })
+
+    puller.appendChild(li)
 }
 
 function TryFoundationDrop(suit) {
@@ -173,6 +193,11 @@ function Spread(){
         const ul = document.createElement("ul")
         for (let i = 0; i < index+1; i++) {
             let li =document.createElement("li")
+            
+            li.addEventListener("click", function () {
+                Try(this)
+            })
+
             let pic = deck[deck_i++]
 
             if (!pic) {
@@ -188,38 +213,6 @@ function Spread(){
             li.addEventListener("click", function(){
                 Try(this)
             })
-            pic.setAttribute("draggable", true)
-            pic.addEventListener("dragstart", function(e) {
-                const draggedLi = this.parentElement
-                const column = draggedLi.parentElement
-                const allLis = Array.from(column.querySelectorAll("li"))
-                const index = allLis.indexOf(draggedLi)
-                const draggedStack = allLis.slice(index)
-                const ids = draggedStack.map(li => li.querySelector("img").id)
-                e.dataTransfer.setData("text/plain", JSON.stringify(ids))
-
-                const topCard = draggedStack[0].querySelector("img")
-                const [val, suit, color] = topCard.id.split("-")
-
-                const allColumns = document.querySelectorAll("#playing_field ul")
-                allColumns.forEach(col => {
-                    const lis = col.querySelectorAll("li")
-                    if (lis.length === 0 && val === "K") {
-                        col.classList.add("valid-drop")
-                    } else if (lis.length > 0) {
-                        const lastCard = lis[lis.length - 1].querySelector("img")
-                        const [lastVal, lastSuit, lastColor] = lastCard.id.split("-")
-                        if (OppositeColor(color, lastColor) && Smaller(val, lastVal)) {
-                            col.classList.add("valid-drop")
-                        }
-                    }
-                })
-            })
-            pic.addEventListener("dragend", function () {
-                document.querySelectorAll(".valid-drop").forEach(col => {
-                    col.classList.remove("valid-drop")
-                })
-            })
 
             li.appendChild(pic)
             ul.appendChild(li)
@@ -232,26 +225,54 @@ function Spread(){
             this.classList.remove("valid-drop")
 
             const ids = JSON.parse(e.dataTransfer.getData("text/plain"))
-            const sourceColumn = Array.from(document.querySelectorAll("#playing_field ul"))
-            .find(ul => Array.from(ul.querySelectorAll("img"))
-            .some(img => ids.includes(img.id)))
-
-            if (!sourceColumn) return
-
             const draggedLis = ids.map(id => {
                 const img = document.getElementById(id)
                 const li = img.closest("li")
                 return li
             })
 
+            const firstCard = draggedLis[0].querySelector("img")
+            const [val, suit, color] = firstCard.id.split("-")
+
+            const targetLis = this.querySelectorAll("li")
+
+            if (targetLis.length === 0) {
+                if (val !== "K") return
+            } else {
+                const lastCard = targetLis[targetLis.length - 1].querySelector("img")
+                const [lastVal, lastSuit, lastColor] = lastCard.id.split("-")
+
+                if (!OppositeColor(color, lastColor) || !Smaller(val, lastVal)) {
+                    return
+                }
+            }
+
             draggedLis.forEach(li => {
                 this.appendChild(li)
             })
 
-           const remainingLis = sourceColumn.querySelectorAll("li")
-            if (remainingLis.length > 0) {
-                const topImg = remainingLis[remainingLis.length - 1].querySelector("img")
-                Reveal(topImg)
+            const sourceColumn = Array.from(document.querySelectorAll("#playing_field ul"))
+                .find(ul => Array.from(ul.querySelectorAll("img"))
+                .some(img => ids.includes(img.id)))
+
+            if (sourceColumn) {
+                const remainingLis = sourceColumn.querySelectorAll("li")
+                if (remainingLis.length > 0) {
+                    const lastLi = remainingLis[remainingLis.length - 1]
+                    const topImg = lastLi.querySelector("img")
+                    if (topImg.src.includes("BACK")) {
+                        Reveal(topImg)
+                    }
+                }
+            } else {
+                const puller = document.getElementById("puller")
+                const imgToRemove = document.getElementById(ids[0])
+                const liToRemove = imgToRemove.closest("li")
+                if (liToRemove && puller.contains(liToRemove)) {
+                    puller.removeChild(liToRemove)
+                    const nextCard = puller.querySelector("img")
+                    if (nextCard) Reveal(nextCard)
+                }
             }
         })
         playing_field.appendChild(ul)
@@ -260,6 +281,39 @@ function Spread(){
 
 function Reveal(img){
     if (!img || !img.id) return
+    img.setAttribute("draggable", true)
+
+    img.addEventListener("dragstart", function(e) {
+        const draggedLi = this.parentElement
+        const column = draggedLi.parentElement
+        const allLis = Array.from(column.querySelectorAll("li"))
+        const index = allLis.indexOf(draggedLi)
+        const draggedStack = allLis.slice(index)
+        const ids = draggedStack.map(li => li.querySelector("img").id)
+        e.dataTransfer.setData("text/plain", JSON.stringify(ids))
+
+        const topCard = draggedStack[0].querySelector("img")
+        const [val, suit, color] = topCard.id.split("-")
+
+        const allColumns = document.querySelectorAll("#playing_field ul")
+        allColumns.forEach(col => {
+            const lis = col.querySelectorAll("li")
+            if (lis.length === 0 && val === "K") {
+                col.classList.add("valid-drop")
+            } else if (lis.length > 0) {
+                const lastCard = lis[lis.length - 1].querySelector("img")
+                const [lastVal, lastSuit, lastColor] = lastCard.id.split("-")
+                if (OppositeColor(color, lastColor) && Smaller(val, lastVal)) {
+                    col.classList.add("valid-drop")
+                }
+            }
+        })
+    })
+    img.addEventListener("dragend", function () {
+        document.querySelectorAll(".valid-drop").forEach(col => {
+            col.classList.remove("valid-drop")
+        })
+    })
     const [val, suit, color] = img.id.split("-")
     img.setAttribute("src", `${theme}/${val}-${suit}.png`)
 }
