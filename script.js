@@ -61,7 +61,7 @@ function Try(item) {
                 if (pulledDeck.length > 0 && pulledDeck[pulledDeck.length - 1] === card) pulledDeck.pop() 
                 else pulledDeck = pulledDeck.filter(c => c !== card) 
                 updatePuller() 
-            } else if (sourceId) turnUp(cardElement) 
+            } else if (sourceId) turnUp(card) 
             if (sourceId) delete card.dataset.sourceColumnId 
             // checkWin() 
             throw "StopIteration" 
@@ -214,124 +214,121 @@ function Smaller(compared, referance){
     return order.indexOf(compared) + 1 === order.indexOf(referance)
 }
 
-function Spread(){
-    playingField.innerHTML = ""
-    for (let index = 0; index < 7; index++) {
-        const ul = document.createElement("ul")
-        ul.setAttribute("id", `col-${index}`)
-        for (let i = 0; i < index+1; i++) {
-            let li =document.createElement("li")
-            let pic = deck.shift()
-            li.appendChild(pic)
-
-            if (i == index) {
-                Reveal(pic, true)
-            }
-            else{
-                pic.setAttribute("src", `${theme}/BACK.png`)
-                pic.classList.add("facedown")
-            }
-            li.addEventListener("click", function(){
-                Try(this)
+function Spread() {
+    playingField.innerHTML = "" 
+    for (let i = 0;  i < 7;  i++) {
+        const ul = document.createElement("ul") 
+        ul.className = "table-column" 
+        ul.id = `table-col-${i}` 
+        for (let j = 0;  j <= i;  j++) {
+            if (deck.length === 0) { console.error("Not enough cards."); break  }
+            const li = document.createElement("li") 
+            const card = deck.shift() 
+            li.appendChild(card) 
+            ul.appendChild(li) 
+            li.addEventListener("click", function(){ Try(li)}) 
+            li.addEventListener("dblclick", function() {
+                if (!card.classList.contains("facedown")) {
+                    const [, suit] = card.id.split("-") 
+                    const target = document.getElementById(`${suit}-A-slot`) 
+                    if (target) {
+                         card.dataset.sourceColumnId = ul.id
+                         TryFoundation(card, suit, target) 
+                    }
+                }
             })
-
-            ul.appendChild(li)
+            Reveal(card, j === i)
         }
-        ul.addEventListener("dragover", function(e) {
-            e.preventDefault()
-        })
+        ul.addEventListener("dragover", function(e){ e.preventDefault()}) 
         ul.addEventListener("drop", function(e) {
-            e.preventDefault()
-            this.classList.remove("valid-drop")
-            try{
-                const ids = JSON.parse(e.dataTransfer.getData("text/plain"));
-                const draggedLis = ids.map(id => {
-                    const img = document.getElementById(id);
-                    return img.closest("li");
-                });
-                const firstCard = draggedLis[0].querySelector("img");
-                const [val, suit, color] = firstCard.id.split("-");
+            e.preventDefault() 
+            this.classList.remove("valid-drop-target") 
+            try {
+                const ids = JSON.parse(e.dataTransfer.getData("text/plain")) 
+                const firstCard = document.getElementById(ids[0]) 
+                if (!firstCard) return 
 
-                const targetLis = this.querySelectorAll("li")
-                
-                if (targetLis.length === 0 && val !== "K") {
-                    return;
-                }
-                if (targetLis.length > 0) {
-                    const lastCard = this.querySelector("li:last-child img");
-                    const [lastVal, lastSuit, lastColor] = lastCard.id.split("-");
-                    if (!OppositeColor(color, lastColor) || !Smaller(val, lastVal)) {
-                        return;
+                const [val, , color] = firstCard.id.split("-") 
+                const sourceId = firstCard.dataset.sourceColumnId 
+                const sourceElement = document.getElementById(sourceId) 
+                const lastCard = this.querySelector("li:last-child img") 
+
+                if ((!lastCard && val === "K") || (lastCard && OppositeColor(color, lastCard.id.split("-")[2]) && Smaller(val, lastCard.id.split("-")[0]))) {
+                    const draggedLis = ids.map(id => document.getElementById(id)?.closest("li")).filter(Boolean) 
+                    draggedLis.forEach(li => this.appendChild(li)) 
+
+                    if (sourceElement === puller && ids.length === 1) {
+                        if (pulledDeck.length > 0 && pulledDeck[pulledDeck.length - 1].id === ids[0]) pulledDeck.pop() 
+                        else pulledDeck = pulledDeck.filter(c => c.id !== ids[0]) 
+                        updatePuller() 
+                    } else if (sourceElement?.classList.contains("table-column")) {
+                        const lastLi = sourceElement.querySelector("li:last-child") 
+                        if (lastLi) Reveal(lastLi.querySelector("img"), true)
                     }
+                    if (sourceId) delete firstCard.dataset.sourceColumnId 
+                    CheckWin() 
                 }
-                const sourceElement = draggedLis[0].parentElement;
-                const isFromPuller = sourceElement === puller;
-                
-                draggedLis.forEach(li => {
-                    this.appendChild(li);
-                })
-                
-                if (isFromPuller) {
-                    updatePuller();
-                } else {
-                    const lastCard = this.querySelector("li:last-child img");
-                    if (lastCard && lastCard.classList.contains("facedown")) {
-                        Reveal(lastCard);
-                    }
-                    // checkWin()
-                }
-            } catch (err) {console.error("Drop error", err)}
-        })
-        playingField.appendChild(ul)
+            } catch (err) { console.error("Drop error", err)  }
+        }) 
+        playingField.appendChild(ul) 
     }
 }
 
-function Reveal(img, fromSpread = false){
-    if (!img || !img.id) return
-    if (!img.classList.contains("facedown") && !fromSpread) return;
-    img.setAttribute("draggable", true)
-    img.classList.remove("facedown")
-    
+function Reveal(img, isFaceUp = true) {
+    if (!img) return 
+    turnUp(img, isFaceUp) 
+    if (!isFaceUp) {
+        img.addEventListener("dragstart", function(e){ e.preventDefault()}) // Prevent drag for facedown
+        return
+    }
     img.addEventListener("dragstart", function(e) {
-        const draggedLi = this.parentElement
-        const column = draggedLi.parentElement
-        const allLis = Array.from(column.querySelectorAll("li"))
-        const index = allLis.indexOf(draggedLi)
-        const draggedStack = allLis.slice(index)
-        const ids = draggedStack.map(li => li.querySelector("img").id)
-        e.dataTransfer.setData("text/plain", JSON.stringify(ids))
-        
-        const topCard = draggedStack[0].querySelector("img")
-        const [val, suit, color] = topCard.id.split("-")
-        
-        const allColumns = document.querySelectorAll("#playingField ul")
-        allColumns.forEach(col => {
-            const lis = col.querySelectorAll("li")
-            if (lis.length === 0 && val === "K") {
-                col.classList.add("valid-drop")
-            } else if (lis.length > 0) {
-                const lastCard = lis[lis.length - 1].querySelector("img")
-                const [lastVal, lastSuit, lastColor] = lastCard.id.split("-")
-                if (OppositeColor(color, lastColor) && Smaller(val, lastVal)) {
-                    col.classList.add("valid-drop")
+        const draggedLi = this.parentElement 
+        const column = draggedLi.parentElement 
+        let ids = [], currentSourceId = null 
+
+        if (column === puller) {
+            ids = [this.id]; currentSourceId = puller.id 
+        } else if (column.classList.contains("table-column")) {
+            const allLis = Array.from(column.children) 
+            const stack = allLis.slice(allLis.indexOf(draggedLi)) 
+            if (stack.some(li => li.querySelector("img")?.classList.contains("facedown"))) {
+                e.preventDefault(); return 
+            }
+            ids = stack.map(li => li.querySelector("img").id) 
+            currentSourceId = column.id 
+        } else { e.preventDefault(); return  }
+
+        this.dataset.sourceColumnId = currentSourceId 
+        e.dataTransfer.setData("text/plain", JSON.stringify(ids)) 
+        e.dataTransfer.effectAllowed = "move" 
+
+        const [topValue, , topColor] = this.id.split("-") 
+        document.querySelectorAll(".table-column, .foundation-slot").forEach(el => {
+            if (el === column && ids.length > 0 && !el.classList.contains("foundation-slot")) return 
+            
+            if (el.classList.contains("table-column")) {
+                const lastImg = el.querySelector("li:last-child img") 
+                if ((!lastImg && topValue === "K") || (lastImg && OppositeColor(topColor, lastImg.id.split("-")[2]) && Smaller(topValue, lastImg.id.split("-")[0]))) {
+                    el.classList.add("valid-drop-target") 
+                }
+            } else if (el.classList.contains("foundation-slot") && ids.length === 1) {
+                const foundSuit = el.id.split("-")[0] 
+                const draggedSuit = this.id.split("-")[1] 
+                if (foundSuit === draggedSuit) {
+                    const lastImg = el.querySelector("img:last-child") 
+                    if ((!lastImg && topValue === "A") || (lastImg && order.indexOf(topValue) === order.indexOf(lastImg.id.split("-")[0]) + 1)) {
+                        el.classList.add("valid-drop-target") 
+                    }
                 }
             }
-        })
+        }) 
     })
-    img.addEventListener("dragend", function () {
-        document.querySelectorAll(".valid-drop").forEach(col => {
-            col.classList.remove("valid-drop")
-        })
-    })
-    
-    const [val, suit, color] = img.id.split("-");
-    img.setAttribute("src", `${theme}/${val}-${suit}.png`);
-    img.classList.remove("facedown");
+    img.addEventListener("dragend", function(){ document.querySelectorAll(".valid-drop-target").forEach(el => el.classList.remove("valid-drop-target")) })
 }
 
 function turnUp(card, isFaceUp = true){
     if (!card || !card.id) return 
-    const [value, suit] = imgElement.id.split("-") 
+    const [value, suit] = card.id.split("-") 
     card.setAttribute("src", isFaceUp ? `${theme}/${value}-${suit}.png` : `${theme}/BACK.png`) 
     card.classList.toggle("facedown", !isFaceUp) 
     card.setAttribute("draggable", isFaceUp) 
