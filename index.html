@@ -14,17 +14,18 @@
         <img src="" alt="Kinézeti téma váltó gomb" onclick="changeTheme()">
         <input type="button" value="Start" onclick="Start()">
     </div>
-        <div id="game">
+    <div id="game">
+        <div class="top-ui">
             <div class="top-bar">
                 <div class="top-left">
                     <div id="deck" onclick="Pull()"> </div>
                     <ul id="puller" class="foundation"> </ul>
                 </div>
-        
+
                 <div class="top-center">
-                    <h1>Solitare</h1>
+                    <h1 class="game-title">Solitare</h1>
                 </div>
-        
+
                 <div class="top-right">
                     <div id="P-A-slot" class="foundation"> </div>
                     <div id="C-A-slot" class="foundation"> </div>
@@ -32,10 +33,9 @@
                     <div id="H-A-slot" class="foundation"> </div>
                 </div>
             </div>
-        
-            <div id="playing_field">
-                
-            </div>
+        </div>
+
+        <div id="playing_field"></div>
     </div>
 </body>
 </html>
