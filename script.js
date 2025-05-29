@@ -70,58 +70,22 @@ function Try(item) {
 }
 
 function Pull() {
-    if (deck.length === 0 && pulledDeck.length > 0) {
-        // Reset deck from pulledDeck, excluding cards no longer in puller
-        deck.push(...pulledDeck)
-        pulledDeck = []
-        puller.innerHTML = ""
+    if (deck.length === 0) {
+        if (pulledDeck.length > 0) {
+            deck.push(...pulledDeck)
+            pulledDeck = []
+            updatePuller()
+            pullingDeck.innerHTML = deck.length > 0 ? `<img src="${theme}/BACK.png">` : `<img src="${theme}/arrow.png">`
+        } else{
+            pullingDeck.innerHTML = ""
+        }
         return
     }
-
-    pullingDeck.innerHTML = ""
-
-    if (deck.length > 0) {
-        const pic = document.createElement("img")
-        pic.setAttribute("src", `${theme}/BACK.png`)
-        pullingDeck.appendChild(pic)
-    }
-
-
-    if (deck.length === 0) return // No more cards
-
-    const card = deck.shift() // Take the top card
-    pulledDeck.push(card)
-
-    Reveal(card)
-
-    puller.innerHTML = "" // Clear old card
-    const li = document.createElement("li")
-    li.appendChild(card)
-    li.addEventListener("click", function () {
-        Try(this)
-    })
-    puller.appendChild(li)
-}
-
-function TryFoundationDrop(suit) {
-    const selected = document.querySelector(".selected")
-    if (!selected) return
-
-    const [value, cardSuit, color] = selected.id.split("-")
-    if (cardSuit !== suit) return
-
-    const targetPile = document.getElementById(`${suit}-A-slot`)
-    const pileImages = targetPile.querySelectorAll("img")
-
-    if (pileImages.length === 0 && value === "A") {
-        moveToFoundation(selected, targetPile)
-    } else if (pileImages.length > 0) {
-        const lastCardId = pileImages[pileImages.length - 1].id
-        const [lastValue] = lastCardId.split("-")
-        if (order.indexOf(value) === order.indexOf(lastValue) + 1) {
-            moveToFoundation(selected, targetPile)
-        }
-    }
+    const card = deck.shift() 
+    pulledDeck.push(card) 
+    Reveal(card) 
+    updatePuller() 
+    pullingDeck.innerHTML = deck.length > 0 ? `<img src="${theme}/BACK.png">` : ""
 }
 
 function moveToFoundation(card, pile) {
@@ -147,52 +111,14 @@ function OppositeColor(compared, referance) {
     return (compared === "red" && referance === "black") || (compared === "black" && referance === "red")
 }
 
-function TryFoundation(card, suit, pile) {
-    if (!card) {
-        console.error(`Invalid card: ${card}`);
-        return;
-    }
+function TryFoundation(card, suit, target) {
+    if (!card || !target || card.id.split("-")[1] !== suit || !target.id.startsWith(suit + "-A-slot")) return 
+    const value = card.id.split("-")[0] 
+    const pile = target.querySelectorAll("img") 
+    const lastCard = pile.length > 0 ? pile[pile.length - 1] : null 
 
-    const [value, cardSuit, color] = card.id.split("-")
-    if (cardSuit !== suit) return
-
-    const pileImages = pile.querySelectorAll("img")
-
-    if (pileImages.length === 0 && value === "A") {
-        moveToFoundation(card, pile)
-    } else if (pileImages.length > 0) {
-        const lastCardId = pileImages[pileImages.length - 1].id
-        const [lastValue] = lastCardId.split("-")
-        if (order.indexOf(value) === order.indexOf(lastValue) - 1) {
-            moveToFoundation(card, pile)
-        }
-    }
-}
-
-function TryMove(card, column) {
-    const [value, suit, color] = card.id.split("-")
-    const li = card.parentNode
-
-    const isFromPuller = li.parentElement === puller
-
-    const cardsInColumn = column.querySelectorAll("li")
-    if (cardsInColumn.length === 0 && value === "K") {
-        column.appendChild(li)
-        if (isFromPuller) {
-            updatePuller()
-        }
-        return
-    }
-
-    const lastLi = cardsInColumn[cardsInColumn.length - 1]
-    const lastCard = lastLi.querySelector("img")
-    const [lastValue, lastSuit, lastColor] = lastCard.id.split("-")
-
-    if (OppositeColor(color, lastColor) && Smaller(value, lastValue)) {
-        column.appendChild(li)
-        if (isFromPuller) {
-            updatePuller()
-        }
+    if ((!lastCard && value === "A") || (lastCard && order.indexOf(value) === order.indexOf(lastCard.id.split("-")[0]) + 1)) {
+        moveToFoundation(card, target) 
     }
 }
 
@@ -266,7 +192,7 @@ function Spread() {
                         if (lastLi) Reveal(lastLi.querySelector("img"), true)
                     }
                     if (sourceId) delete firstCard.dataset.sourceColumnId 
-                    CheckWin() 
+                    checkWin() 
                 }
             } catch (err) { console.error("Drop error", err)  }
         }) 
@@ -390,7 +316,7 @@ function Fill() {
 
 function changeTheme() {
     theme = theme === "dark" ? "light" : "dark" 
-    document.body.className = `${theme}-theme`
+    document.body.className = `theme-${theme}`
     document.querySelectorAll("img").forEach(img => {
         if (img.classList.contains("facedown") || img.parentElement === pullingDeck) {
             img.setAttribute("src", `${theme}/BACK.png`) 
@@ -399,4 +325,15 @@ function changeTheme() {
             img.setAttribute("src", `${theme}/${val}-${suit}.png`) 
         }
     }) 
+}
+
+function checkWin() {
+    if (document.querySelectorAll(".foundation-slot").length === 4 &&
+        Array.from(document.querySelectorAll(".foundation-slot")).every(p => p.querySelectorAll("img").length === 13)) {
+        setTimeout(() => alert("Gratulálok, nyertél! Congratulations, you won!"), 100) 
+        pullingDeck.onclick = null 
+        playingField.querySelectorAll("ul.table-column li").forEach(li => li.onclick = li.ondblclick = null) 
+        document.querySelectorAll("img").forEach(img => img.draggable = false) 
+
+    }
 }
