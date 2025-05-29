@@ -88,23 +88,25 @@ function Pull() {
     pullingDeck.innerHTML = deck.length > 0 ? `<img src="${theme}/BACK.png">` : ""
 }
 
-function moveToFoundation(card, pile) {
-    const originalLi = card.parentNode
-    const sourceId = card.dataset.sourceColumn
-    pile.appendChild(card)
-    if (originalLi && originalLi !== pile && (originalLi.parentNode.parentNode === playingField ||originalLi.parentNode === puller) && originalLi.children.length === 0) {
-        originalLi.remove()
+function moveToFoundation(card, target) {
+    const originalLi = card.parentNode 
+    const sourceId = card.dataset.sourceColumnId 
+    target.innerHTML = ""
+    target.appendChild(card) 
+    if (originalLi && originalLi !== target && (originalLi.parentNode?.classList.contains("table-column") || originalLi.parentNode === puller) && originalLi.children.length === 0) {
+        originalLi.remove() 
     }
-    card.classList.remove("selected")
-    card.style.position = "static"
+    card.classList.remove("selected") 
+    card.style.position = "static" 
 
     if (sourceId === puller.id) {
-        if (pulledDeck.length > 0 && pulledDeck[pulledDeck.length - 1] === card) pulledDeck.pop()
-        else pulledDeck = pulledDeck.filter(c => c !== card)
-        updatePuller()
-    } else if (sourceId && document.getElementById(sourceId).parentNode === playingField) {
-        turnUp(card)
+        if (pulledDeck.length > 0 && pulledDeck[pulledDeck.length - 1] === card) pulledDeck.pop() 
+        else pulledDeck = pulledDeck.filter(c => c !== card) 
+        updatePuller() 
+    } else if (sourceId && document.getElementById(sourceId)?.classList.contains("table-column")) {
+        revealLast(card)
     }
+    if (sourceId) delete card.dataset.sourceColumnId
 }
 
 function OppositeColor(compared, referance) {
@@ -131,6 +133,15 @@ function updatePuller() {
         li.addEventListener("click", function() {
             Try(this)
         })
+        li.addEventListener("dblclick", function() {
+                if (!previousCard.classList.contains("facedown")) {
+                    const [, suit] = previousCard.id.split("-") 
+                    const target = document.getElementById(`${suit}-A-slot`) 
+                    if (target) {
+                        TryFoundation(previousCard, suit, target) 
+                    }
+                }
+            })
         revealLast(previousCard)
         puller.appendChild(li);
     }
@@ -158,8 +169,8 @@ function Spread() {
                     const [, suit] = card.id.split("-") 
                     const target = document.getElementById(`${suit}-A-slot`) 
                     if (target) {
-                         card.dataset.sourceColumnId = ul.id
-                         TryFoundation(card, suit, target) 
+                        card.dataset.sourceColumnId = ul.id
+                        TryFoundation(card, suit, target) 
                     }
                 }
             })
@@ -334,6 +345,5 @@ function checkWin() {
         pullingDeck.onclick = null 
         playingField.querySelectorAll("ul.table-column li").forEach(li => li.onclick = li.ondblclick = null) 
         document.querySelectorAll("img").forEach(img => img.draggable = false) 
-
     }
 }
