@@ -1,5 +1,6 @@
 const deck = []
-let pull_index = 28 //A kiosztánál leosztott 28 lap.
+let pull_index = 0
+let pulled_deck = []
 let theme = "dark"
 const playing_field = document.getElementById("playing_field")
 const pulling_deck = document.getElementById("deck")
@@ -78,29 +79,49 @@ function Try(item){
 
         if (Smaller(cur_object[0], last_id[0])) {
             col.appendChild(cur_li)
+            const remaining = column.querySelectorAll("li")
+            if (remaining.length > 0) {
+                const lastInColumn = remaining[remaining.length - 1].querySelector("img")
+                if (lastInColumn && lastInColumn.classList.contains("facedown")) {
+                    Reveal(lastInColumn)
+                }
+            }
             return
         }
     }
 }
 
 function Pull() {
-    const puller = document.getElementById("puller")
-
-    if (pull_index >= deck.length) {
-        pull_index = 28
+    if (deck.length === 0 && pulled_deck.length > 0) {
+        // Reset deck from pulled_deck, excluding cards no longer in puller
+        deck.push(...pulled_deck)
+        pulled_deck = []
         puller.innerHTML = ""
+        return
     }
 
-    const card = deck[pull_index++]
+    pulling_deck.innerHTML = ""
+
+    if (deck.length > 0) {
+        const pic = document.createElement("img")
+        pic.setAttribute("src", `${theme}/BACK.png`)
+        pulling_deck.appendChild(pic)
+    }
+
+
+    if (deck.length === 0) return // No more cards
+
+    const card = deck.shift() // Take the top card
+    pulled_deck.push(card)
+
     Reveal(card)
 
+    puller.innerHTML = "" // Clear old card
     const li = document.createElement("li")
     li.appendChild(card)
-
     li.addEventListener("click", function () {
         Try(this)
     })
-
     puller.appendChild(li)
 }
 
@@ -188,7 +209,6 @@ function Smaller(compared, referance){
 }
 
 function Spread(){
-    let deck_i = 0;
     for (let index = 0; index < 6; index++) {
         const ul = document.createElement("ul")
         for (let i = 0; i < index+1; i++) {
@@ -198,7 +218,7 @@ function Spread(){
                 Try(this)
             })
 
-            let pic = deck[deck_i++]
+            let pic = deck.shift()
 
             if (!pic) {
                 console.error(`Card not found at index ${deck_i - 1}`)
@@ -209,6 +229,7 @@ function Spread(){
             }
             else{
                 pic.setAttribute("src", `${theme}/BACK.png`)
+                pic.classList.add("facedown")
             }
             li.addEventListener("click", function(){
                 Try(this)
@@ -260,19 +281,12 @@ function Spread(){
                 if (remainingLis.length > 0) {
                     const lastLi = remainingLis[remainingLis.length - 1]
                     const topImg = lastLi.querySelector("img")
-                    if (topImg.src.includes("BACK")) {
+                    if (topImg.classList.contains("facedown")) {
                         Reveal(topImg)
                     }
                 }
             } else {
-                const puller = document.getElementById("puller")
-                const imgToRemove = document.getElementById(ids[0])
-                const liToRemove = imgToRemove.closest("li")
-                if (liToRemove && puller.contains(liToRemove)) {
-                    puller.removeChild(liToRemove)
-                    const nextCard = puller.querySelector("img")
-                    if (nextCard) Reveal(nextCard)
-                }
+                puller.innerHTML = pulled_deck[pull_index]
             }
         })
         playing_field.appendChild(ul)
@@ -282,6 +296,7 @@ function Spread(){
 function Reveal(img){
     if (!img || !img.id) return
     img.setAttribute("draggable", true)
+    img.classList.remove("facedown")
 
     img.addEventListener("dragstart", function(e) {
         const draggedLi = this.parentElement
