@@ -12,7 +12,7 @@ function Start() {
     document.getElementById("game").style.display = "block" 
     pullingDeck.innerHTML = `<img src="${theme}/BACK.png">` 
     Fill() 
-    Spread() 
+    Spread();
 
     ["P", "C", "D", "H"].forEach(suit => {
         const pile = document.getElementById(`${suit}-A-slot`) 
@@ -34,53 +34,48 @@ function Start() {
 
 function Try(item) {
     const card = item.querySelector("img");
-    if (!card || card.classList.contains("facedown")) return;
+    if (!card || card.classList.contains("facedown")) return
 
-    const [value, suit, color] = card.id.split("-");
-    const li = card.parentElement;
-    const sourceColumn = li.parentElement;
-    card.dataset.sourceColumnId = sourceColumn === playingField ? li.id : (sourceColumn === puller ? puller.id : null);
+    const [value, suit, color] = card.id.split("-")
+    const li = card.parentElement
+    const sourceColumn = li.parentElement
+    card.dataset.sourceColumnId = sourceColumn === playingField ? li.id : (sourceColumn === puller ? puller.id : null)
 
-    // First try foundation
-    const targetFoundation = document.getElementById(`${suit}-A-slot`);
+    const targetFoundation = document.getElementById(`${suit}-A-slot`)
     if (targetFoundation) {
-        const lastCard = targetFoundation.querySelector("img:last-child");
-        const canMoveToFoundation = (!lastCard && value === "A") || 
-                                  (lastCard && order.indexOf(value) === order.indexOf(lastCard.id.split("-")[0]) + 1);
+        const lastCard = targetFoundation.querySelector("img:last-child")
+        const canMoveToFoundation = (!lastCard && value === "A") || (lastCard && order.indexOf(value) === order.indexOf(lastCard.id.split("-")[0]) + 1)
         
         if (canMoveToFoundation) {
-            TryFoundation(card, suit, targetFoundation);
-            return;
+            TryFoundation(card, suit, targetFoundation)
+            return
         }
     }
 
-    // Then try table columns
-    let moved = false;
+    let moved = false
     playingField.querySelectorAll("ul.table-column").forEach(column => {
-        if (moved || column === li.parentElement) return;
+        if (moved || column === li.parentElement) return
 
-        const lastCard = column.querySelector("li:last-child img");
+        const lastCard = column.querySelector("li:last-child img")
         const canMoveToColumn = (!lastCard && value === "K") || 
                               (lastCard && OppositeColor(color, lastCard.id.split("-")[2]) && 
-                               Smaller(value, lastCard.id.split("-")[0]));
+                               Smaller(value, lastCard.id.split("-")[0]))
 
         if (canMoveToColumn) {
-            column.appendChild(li);
+            column.appendChild(li)
             
-            // Update source (puller or table column)
             if (card.dataset.sourceColumnId === puller.id) {
-                pulledDeck = pulledDeck.filter(c => c !== card);
+                pulledDeck = pulledDeck.filter(c => c !== card)
                 updatePuller();
             } 
-            // Reveal card below if coming from table column
             else if (sourceColumn.classList.contains("table-column")) {
-                const lastLi = sourceColumn.querySelector("li:last-child");
-                if (lastLi) Reveal(lastLi.querySelector("img"));
+                const lastLi = sourceColumn.querySelector("li:last-child")
+                if (lastLi) Reveal(lastLi.querySelector("img"))
             }
             
-            moved = true;
+            moved = true
         }
-    });
+    })
 }
 
 function Pull() {
@@ -106,15 +101,11 @@ function moveToFoundation(card, target) {
     const originalLi = card.parentNode;
     const sourceId = card.dataset.sourceColumnId;
     
-    // Remove from original location
     originalLi.removeChild(card);
-    
-    // Add to foundation
+    target.innerHTML = ""
     target.appendChild(card);
-    card.classList.remove("selected");
     card.style.position = "static";
-    
-    // Handle source cleanup
+
     if (sourceId === puller.id) {
         pulledDeck = pulledDeck.filter(c => c !== card);
         updatePuller();
@@ -123,7 +114,7 @@ function moveToFoundation(card, target) {
         const sourceColumn = document.getElementById(sourceId);
         if (sourceColumn?.classList.contains("table-column")) {
             const lastLi = sourceColumn.querySelector("li:last-child");
-            if (lastLi) Reveal(lastLi.querySelector("img"));
+            if (lastLi) revealLast(lastLi.querySelector("img"));
         }
     }
     
@@ -261,6 +252,7 @@ function Reveal(img, isFaceUp = true) {
             if (stack.some(li => li.querySelector("img")?.classList.contains("facedown"))) {
                 e.preventDefault(); return 
             }
+            console.log(stack);
             ids = stack.map(li => li.querySelector("img").id) 
             currentSourceId = column.id 
         } else { e.preventDefault(); return  }
