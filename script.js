@@ -140,9 +140,9 @@ function moveToFoundation(card, target) {
 
     if (sourceElement) {
         if (sourceElement.classList.contains('table-column')) {
-            const lastLi = sourceElement.querySelector('li:last-child');
+            const lastLi = sourceElement.lastElementChild;
             if (lastLi) {
-                const lastCard = lastLi.querySelector('img:first-child');
+                const lastCard = lastLi.querySelector("img");
                 if (lastCard?.classList.contains('facedown')) {
                     turnUp(lastCard, true);
                 }
