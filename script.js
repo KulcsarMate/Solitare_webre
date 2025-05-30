@@ -34,39 +34,53 @@ function Start() {
 
 function Try(item) {
     const card = item.querySelector("img");
-    if (!card || !card.classList.contains("facedown")) return
+    if (!card || card.classList.contains("facedown")) return;
 
     const [value, suit, color] = card.id.split("-");
     const li = card.parentElement;
-    card.dataset.sourceColumnId = li.parentElement.parentElement === playingField ? li.id : (li === puller ? puller.id : null)
+    const sourceColumn = li.parentElement;
+    card.dataset.sourceColumnId = sourceColumn === playingField ? li.id : (sourceColumn === puller ? puller.id : null);
 
-    const targetFoundation = document.getElementById(`${suit}-A-slot`) 
+    // First try foundation
+    const targetFoundation = document.getElementById(`${suit}-A-slot`);
     if (targetFoundation) {
-        const lastCard = targetFoundation.querySelector("img:last-child") 
-        if ((value === "A" && !lastCard) || (lastCard && order.indexOf(value) === order.indexOf(lastCard.id.split("-")[0]) + 1)) {
-            TryFoundation(card, suit, targetFoundation) 
-            // checkWin() 
-            return 
+        const lastCard = targetFoundation.querySelector("img:last-child");
+        const canMoveToFoundation = (!lastCard && value === "A") || 
+                                  (lastCard && order.indexOf(value) === order.indexOf(lastCard.id.split("-")[0]) + 1);
+        
+        if (canMoveToFoundation) {
+            TryFoundation(card, suit, targetFoundation);
+            return;
         }
     }
 
-    playingField.querySelectorAll("ul").forEach(column =>{
-        if (column === li) return 
-        const lastCard = column.querySelector("li:last-child img") 
-        const sourceId = card.dataset.sourceColumnId 
+    // Then try table columns
+    let moved = false;
+    playingField.querySelectorAll("ul.table-column").forEach(column => {
+        if (moved || column === li.parentElement) return;
 
-        if ((!lastCard && value === "K") || (lastCard && OppositeColor(color, lastCard.id.split("-")[2]) && Smaller(value, lastCard.id.split("-")[0]))) {
-            column.appendChild(item) 
-            if (sourceId === puller.id) {
-                if (pulledDeck.length > 0 && pulledDeck[pulledDeck.length - 1] === card) pulledDeck.pop() 
-                else pulledDeck = pulledDeck.filter(c => c !== card) 
-                updatePuller() 
-            } else if (sourceId) turnUp(card) 
-            if (sourceId) delete card.dataset.sourceColumnId 
-            // checkWin() 
-            throw "StopIteration" 
+        const lastCard = column.querySelector("li:last-child img");
+        const canMoveToColumn = (!lastCard && value === "K") || 
+                              (lastCard && OppositeColor(color, lastCard.id.split("-")[2]) && 
+                               Smaller(value, lastCard.id.split("-")[0]));
+
+        if (canMoveToColumn) {
+            column.appendChild(li);
+            
+            // Update source (puller or table column)
+            if (card.dataset.sourceColumnId === puller.id) {
+                pulledDeck = pulledDeck.filter(c => c !== card);
+                updatePuller();
+            } 
+            // Reveal card below if coming from table column
+            else if (sourceColumn.classList.contains("table-column")) {
+                const lastLi = sourceColumn.querySelector("li:last-child");
+                if (lastLi) Reveal(lastLi.querySelector("img"));
+            }
+            
+            moved = true;
         }
-    })
+    });
 }
 
 function Pull() {
@@ -89,24 +103,31 @@ function Pull() {
 }
 
 function moveToFoundation(card, target) {
-    const originalLi = card.parentNode 
-    const sourceId = card.dataset.sourceColumnId 
-    target.innerHTML = ""
-    target.appendChild(card) 
-    if (originalLi && originalLi !== target && (originalLi.parentNode?.classList.contains("table-column") || originalLi.parentNode === puller) && originalLi.children.length === 0) {
-        originalLi.remove() 
-    }
-    card.classList.remove("selected") 
-    card.style.position = "static" 
-
+    const originalLi = card.parentNode;
+    const sourceId = card.dataset.sourceColumnId;
+    
+    // Remove from original location
+    originalLi.removeChild(card);
+    
+    // Add to foundation
+    target.appendChild(card);
+    card.classList.remove("selected");
+    card.style.position = "static";
+    
+    // Handle source cleanup
     if (sourceId === puller.id) {
-        if (pulledDeck.length > 0 && pulledDeck[pulledDeck.length - 1] === card) pulledDeck.pop() 
-        else pulledDeck = pulledDeck.filter(c => c !== card) 
-        updatePuller() 
-    } else if (sourceId && document.getElementById(sourceId)?.classList.contains("table-column")) {
-        revealLast(card)
+        pulledDeck = pulledDeck.filter(c => c !== card);
+        updatePuller();
+    } 
+    else if (sourceId) {
+        const sourceColumn = document.getElementById(sourceId);
+        if (sourceColumn?.classList.contains("table-column")) {
+            const lastLi = sourceColumn.querySelector("li:last-child");
+            if (lastLi) Reveal(lastLi.querySelector("img"));
+        }
     }
-    if (sourceId) delete card.dataset.sourceColumnId
+    
+    delete card.dataset.sourceColumnId;
 }
 
 function OppositeColor(compared, referance) {
@@ -114,35 +135,44 @@ function OppositeColor(compared, referance) {
 }
 
 function TryFoundation(card, suit, target) {
-    if (!card || !target || card.id.split("-")[1] !== suit || !target.id.startsWith(suit + "-A-slot")) return 
-    const value = card.id.split("-")[0] 
-    const pile = target.querySelectorAll("img") 
-    const lastCard = pile.length > 0 ? pile[pile.length - 1] : null 
+    if (!card || !target || card.id.split("-")[1] !== suit || !target.id.startsWith(suit + "-A-slot")) return false
+    const value = card.id.split("-")[0]
+    const pile = target.querySelectorAll("img")
+    const lastCard = pile.length > 0 ? pile[pile.length - 1] : null
 
     if ((!lastCard && value === "A") || (lastCard && order.indexOf(value) === order.indexOf(lastCard.id.split("-")[0]) + 1)) {
-        moveToFoundation(card, target) 
+        moveToFoundation(card, target)
+        return true
     }
+    return false
 }
 
 function updatePuller() {
-    puller.innerHTML = ""
+    puller.innerHTML = "";
     if (pulledDeck.length > 0) {
-        const previousCard = pulledDeck[pulledDeck.length - 1]
-        const li = document.createElement("li")
-        li.appendChild(previousCard)
-        li.addEventListener("click", function() {
-            Try(this)
-        })
-        li.addEventListener("dblclick", function() {
-                if (!previousCard.classList.contains("facedown")) {
-                    const [, suit] = previousCard.id.split("-") 
-                    const target = document.getElementById(`${suit}-A-slot`) 
-                    if (target) {
-                        TryFoundation(previousCard, suit, target) 
-                    }
+        const card = pulledDeck[pulledDeck.length - 1];
+        
+        // Skip if card is already in foundation
+        if (document.querySelector(`.foundation img[id="${card.id}"]`)) {
+            pulledDeck.pop();
+            return updatePuller();
+        }
+        
+        const li = document.createElement("li");
+        li.appendChild(card);
+        
+        li.addEventListener("click", () => Try(li));
+        li.addEventListener("dblclick", () => {
+            if (!card.classList.contains("facedown")) {
+                const [, suit] = card.id.split("-");
+                const target = document.getElementById(`${suit}-A-slot`);
+                if (target) {
+                    card.dataset.sourceColumnId = puller.id;
+                    TryFoundation(card, suit, target);
                 }
-            })
-        revealLast(previousCard)
+            }
+        });
+        
         puller.appendChild(li);
     }
 }
